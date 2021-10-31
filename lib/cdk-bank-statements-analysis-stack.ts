@@ -13,9 +13,9 @@ export class CdkBankStatementsAnalysisStack extends cdk.Stack {
     });
     
     const lambdaFunction = new lambda.Function(this, 'BankAnalyser', {
-      code: lambda.Code.fromAsset('src'),
-      handler: 'handler.py',
-      functionName: 'BankAnalyzerHandler',
+      code: lambda.Code.fromAsset('lambda/BankStatementAnalyzer'),
+      handler: 'StatementAnalyzer.handler',
+      functionName: 'StatementAnalyzer',
       runtime: lambda.Runtime.PYTHON_3_9,
     });
 
@@ -26,5 +26,6 @@ export class CdkBankStatementsAnalysisStack extends cdk.Stack {
     });
 
     lambdaFunction.addEventSource(s3PutEventSource);
+    bucket.grantReadWrite(lambdaFunction);
   }
 }
