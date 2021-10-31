@@ -1,18 +1,30 @@
-import * as sns from '@aws-cdk/aws-sns';
-import * as subs from '@aws-cdk/aws-sns-subscriptions';
-import * as sqs from '@aws-cdk/aws-sqs';
 import * as cdk from '@aws-cdk/core';
+import * as s3 from '@aws-cdk/aws-s3';
+import * as lambda from '@aws-cdk/aws-lambda';
+import * as lambdaEventSources from '@aws-cdk/aws-lambda-event-sources';
 
 export class CdkBankStatementsAnalysisStack extends cdk.Stack {
   constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const queue = new sqs.Queue(this, 'CdkBankStatementsAnalysisQueue', {
-      visibilityTimeout: cdk.Duration.seconds(300)
+    const bucket = new s3.Bucket(this, 'MyBankStatements', {
+      autoDeleteObjects: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY
+    });
+    
+    const lambdaFunction = new lambda.Function(this, 'BankAnalyser', {
+      code: lambda.Code.fromAsset('src'),
+      handler: 'handler.py',
+      functionName: 'BankAnalyzerHandler',
+      runtime: lambda.Runtime.PYTHON_3_9,
     });
 
-    const topic = new sns.Topic(this, 'CdkBankStatementsAnalysisTopic');
+    const s3PutEventSource = new lambdaEventSources.S3EventSource(bucket, {
+      events: [
+        s3.EventType.OBJECT_CREATED_PUT
+      ]
+    });
 
-    topic.addSubscription(new subs.SqsSubscription(queue));
+    lambdaFunction.addEventSource(s3PutEventSource);
   }
 }
